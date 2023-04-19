@@ -1,0 +1,10 @@
+flask
+numpy
+tensorflow
+sklearn
+matplotlib.pyplot
+scipy.stats
+keras
+gzip
+urllib.request
+

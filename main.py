@@ -1,5 +1,4 @@
 # base operations
-import pandas as pd
 import numpy as np
 
 # for building models and preparing data
