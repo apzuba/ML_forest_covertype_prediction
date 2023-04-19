@@ -117,7 +117,7 @@ ovr_eval = ovr_model.evaluate(X_test1, y_test1)
 # 3. Scikit SVM Model
 svm_eval = svm_model.evaluate(X_test1, y_test1)
 
-# 3. Tensorflow Model
+# 4. Tensorflow Model
 tf_eval = new_tf_model.evaluate(X_test1, y_test1)[1]
 
 # Plot the four results
