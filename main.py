@@ -10,11 +10,11 @@ from flask import Flask, jsonify, request
 # custom-made local modules
 from modules.loading_data import load_dataset
 from modules.project_utils import print_compare_predicitons, distil_best_params, adjust_data_for_tf
+import modules.project_utils as utils
 import modules.heurestics as heur
 import modules.scikit_models as scikit_models
 import modules.new_tf_module as tf_module
 import modules.plot_utils as plt_utils
-
 
 # Loading the dataset
 
@@ -39,7 +39,7 @@ X_cv, X_test, y_cv, y_test = train_test_split(x_, y_, test_size=0.50, random_sta
 del x_, y_
 
 
-start_row, end_row = 0, 10    # choose the 'start' and 'end' row from the y_train dataset 
+start_row, end_row = 0, 20    # choose the 'start' and 'end' row from the y_train dataset 
                              # to make printed predictions on.
 
 
@@ -78,7 +78,7 @@ print_compare_predicitons(new_svm_prediction, y_train, start_row)
 
 # Caution, the training of below models may take a few minutes to hours. The below operation
 # scales and reduces the size of dataset to speed up the process.
-X_train_scaled, y_train, X_cv_scaled, y_cv, X_test_scaled, y_test, X_mini_test_scaled = adjust_data_for_tf(
+X_train_scaled, y_train_conv, X_cv_scaled, y_cv_conv, X_test_scaled, y_test_conv, X_mini_test_scaled = utils.adjust_data_for_tf(
     X_train, y_train, 
     X_cv, y_cv, 
     X_test, y_test, 
@@ -86,7 +86,7 @@ X_train_scaled, y_train, X_cv_scaled, y_cv, X_test_scaled, y_test, X_mini_test_s
     )
 
 # Finding the top parameters for the TF model.
-best_parameters = tf_module.search_fit(X_train_scaled, y_train, X_cv_scaled, y_cv)
+best_parameters = tf_module.search_fit(X_train_scaled, y_train_conv, X_cv_scaled, y_cv_conv)
 
 # Create model with new parameters - adjust the parameters based on the found results.
 dropout, layers, neurons, learning_rate = distil_best_params(best_parameters)
@@ -99,30 +99,31 @@ new_tf_model = tf_module.create_model(
     )
 
 # Plot the training curve
-tf_module.plot_the_best(new_tf_model, X_train_scaled, y_train, X_cv_scaled, y_cv)
+tf_module.plot_the_best(new_tf_model, X_train_scaled, y_train_conv, X_cv_scaled, y_cv_conv)
+
+# Predict
+predictions = new_tf_model.predict(X_mini_test_scaled)
+tf_prediction = np.argmax(predictions, axis=1) + 1
+print_compare_predicitons(tf_prediction, y_train, start_row)
 
 
 # IV. Evaluation of all models.
 
-#Decreasing the test size.
-X_test1, X_test, y_test1, y_test = train_test_split(X_test, y_test, test_size=0.95, random_state=1)
-
 # 1. Spearman heurestics
-spearm_test_results = spearman_model.make_prediction(X_test1)
-spearm_eval = np.mean(spearm_test_results==y_test1)
+spearm_test_results = spearman_model.make_prediction(X_test)
+spearm_eval = np.mean(spearm_test_results==y_test)
 
 # 2. Scikit OvR Model
-ovr_eval = ovr_model.evaluate(X_test1, y_test1)
+ovr_eval = ovr_model.evaluate(X_test_scaled, y_test)
 
 # 3. Scikit SVM Model
-svm_eval = svm_model.evaluate(X_test1, y_test1)
+svm_eval = svm_model.evaluate(X_test_scaled, y_test)
 
 # 4. Tensorflow Model
-tf_eval = new_tf_model.evaluate(X_test1, y_test1)[1]
+tf_eval = new_tf_model.evaluate(X_test_scaled, y_test_conv)[1]
 
 # Plot the four results
 plt_utils.plot_accuracies(spearm_eval, ovr_eval, svm_eval, tf_eval)
-
 
 # V. REST API
 app = Flask(__name__)
@@ -135,15 +136,18 @@ def predict():
     
     if model == 'spearman':
         prediction = spearman_model.make_prediction(input_features)
-    elif model == 'ovr':
-        prediction = ovr_model.make_prediction(input_features)
-    elif model == 'svm':
-        prediction = svm_model.make_prediction(input_features)
-    elif model == 'tf':
-        predictions = new_tf_model.predict(input_features)
-        prediction = np.argmax(predictions, axis=1) + 1  # Add 1 to offset the zero-based indexing   
     else:
-        return jsonify({'error': 'Invalid model specified'})
+        input_features_scaled = utils.scale_features(X_train, input_features)
+
+        if model == 'ovr':
+            prediction = ovr_model.make_prediction(input_features_scaled)
+        elif model == 'svm':
+            prediction = svm_model.make_prediction(input_features_scaled)
+        elif model == 'tf':
+            predictions = new_tf_model.predict(input_features_scaled)
+            prediction = np.argmax(predictions, axis=1) + 1  # Add 1 to offset the zero-based indexing   
+        else:
+            return jsonify({'error': 'Invalid model specified'})
     
     return jsonify({'prediction': prediction.tolist()})
 

@@ -7,21 +7,19 @@ from keras.callbacks import LambdaCallback
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
 from scipy.stats import randint
 
-import numpy as np
 import matplotlib.pyplot as plt
 
 
 # Create function that returns a compiled Keras model
 def create_model(num_layers=1, num_neurons=24, dropout=0.3, learning_rate=0.01):
     model = Sequential()
-    model.add(Dense(num_neurons, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.3)))
+    model.add(Dense(num_neurons, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)))
     for i in range(num_layers-1):
-        model.add(Dense(num_neurons, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.3)))
+        model.add(Dense(num_neurons, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)))
         model.add(Dropout(dropout))
-    model.add(Dense(7, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.3)))
-    model.add(Dense(1, activation= 'linear'))
+    model.add(Dense(7, activation= 'softmax', kernel_regularizer=tf.keras.regularizers.l2(0.001)))
     model.compile(
-        loss = tf.keras.losses.BinaryCrossentropy(from_logits=True), 
+        loss = tf.keras.losses.CategoricalCrossentropy(), 
         optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), 
         metrics=['accuracy'
                     ])
@@ -35,13 +33,13 @@ def search_fit(X_train_scaled, y_train, X_cv_scaled, y_cv):
     # Set hyperparameters and value ranges to randomly test from.
     param_dist = {
         'num_layers': randint(1, 4),
-        'num_neurons': randint(32, 156),
+        'num_neurons': randint(16, 92),
         'dropout': [0.1, 0.2, 0.3, 0.4, 0.5],
         'learning_rate' : [0.0001, 0.001, 0.01, 0.1],
     }
 
     # Create RandomizedSearchCV object
-    search = RandomizedSearchCV(model, param_distributions=param_dist, n_iter=5, cv=2, verbose=2)
+    search = RandomizedSearchCV(model, param_distributions=param_dist, n_iter=8, cv=2, verbose=2)
 
     # train the network and store the history data
     search.fit(X=X_train_scaled, y=y_train,
