@@ -14,6 +14,9 @@ import numpy as np
 # from sklearn.cluster import KMeans 
 # import plot_utils
 
+import logging
+logging.getLogger("sklearn").setLevel(logging.ERROR)
+
 
 # One vs Rest (OvR) Logistic Regression model
 class OvR_Model:

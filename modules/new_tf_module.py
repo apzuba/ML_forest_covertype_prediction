@@ -8,6 +8,7 @@ from sklearn.model_selection import RandomizedSearchCV, train_test_split
 from scipy.stats import randint
 
 import matplotlib.pyplot as plt
+import logging
 
 
 # Create function that returns a compiled Keras model
@@ -40,6 +41,9 @@ def search_fit(X_train_scaled, y_train, X_cv_scaled, y_cv):
 
     # Create RandomizedSearchCV object
     search = RandomizedSearchCV(model, param_distributions=param_dist, n_iter=8, cv=2, verbose=2)
+
+    # Add a logger
+    logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
     # train the network and store the history data
     search.fit(X=X_train_scaled, y=y_train,
