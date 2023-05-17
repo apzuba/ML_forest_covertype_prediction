@@ -9,7 +9,7 @@ A) Data preprocessing, B) Hyperparameters self-learning function,
 C) plots of the training for the top parameters, D) models evalation, E) REST API.
 
 
-The project tasks included:
+The project tasks/objectives included:
 1. Load the Covertype Data Set
 ○ https://archive.ics.uci.edu/ml/datasets/Covertype
 
